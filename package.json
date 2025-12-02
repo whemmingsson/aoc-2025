@@ -1,0 +1,23 @@
+{
+  "name": "aoc-common",
+  "version": "1.0.0",
+  "description": "A Node.js TypeScript project with ESM support",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "debug": "node --inspect-brk dist/index.js",
+    "clean": "rimraf dist"
+  },
+  "keywords": ["typescript", "esm", "node"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
+  }
+}

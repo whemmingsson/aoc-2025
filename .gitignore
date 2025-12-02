@@ -1,0 +1,9 @@
+node_modules
+.vscode
+input
+input/
+input/*
+dist
+dist/
+dist/*
+*.txt
