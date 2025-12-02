@@ -58,7 +58,6 @@ const getData = async <T extends SourceType>(
   fileName: string,
   useExample: boolean
 ): Promise<DataForSourceType<T>> => {
-  console.log("get data", sourceType);
   switch (sourceType) {
     case SourceType.STRING_ARRAY:
       return {
@@ -89,26 +88,37 @@ const getData = async <T extends SourceType>(
   }
 };
 
-export class Puzzle {
+export class Puzzle<T extends SourceType> {
   day: number;
   fileName: string;
   useExample: boolean;
+  sourceType: T;
+  solver: (data: DataForSourceType<T>) => Promise<void>;
 
-  constructor(day: number, useExample: boolean = false) {
+  constructor(
+    day: number,
+    solver: (data: DataForSourceType<T>) => Promise<void>,
+    sourceType: T,
+    useExample: boolean = false
+  ) {
     this.day = day;
     this.fileName = `day${day}.txt`;
     this.useExample = useExample;
+    this.sourceType = sourceType;
+    this.solver = solver;
   }
 
-  async run<T extends SourceType>(
-    sourceType: T,
-    runFunc: (data: DataForSourceType<T>) => Promise<void>
-  ): Promise<void> {
+  async solve(): Promise<void> {
     try {
       console.log(`--- Day ${this.day} ---`);
-      const data = await getData(sourceType, this.fileName, this.useExample);
-      console.log(data);
-      await runFunc(data);
+      const data = await getData(
+        this.sourceType,
+        this.fileName,
+        this.useExample
+      );
+      console.log("Starting solver...\n");
+      await this.solver(data);
+      console.log("\nSolver finished...\n");
       console.log(`--- End of Day ${this.day} ---`);
     } catch (e) {
       console.log(e);

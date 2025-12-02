@@ -11,15 +11,11 @@ const fileExists = async (path: string): Promise<boolean> => {
 };
 
 const getFileContentAsArray = async (path: string): Promise<string[]> => {
-  console.log(path);
   const content = await readFile(path);
-  console.log(content);
   return content.split("\r\n").filter((line) => line.length > 0);
 };
 
 const readFile = async (path: string): Promise<string> => {
-  console.log("Attempting to read file at path:", path);
-
   const exists = await fileExists(path);
   if (!exists) {
     console.error("File does not exist:", path);
@@ -28,7 +24,12 @@ const readFile = async (path: string): Promise<string> => {
 
   try {
     const content = await fs.readFile(path, "utf-8");
-    console.log("File read successfully, content length:", content.length);
+    console.log(
+      "File",
+      path,
+      "read successfully, content length:",
+      content.length
+    );
     return content;
   } catch (error) {
     console.error("Error reading file:", error);
