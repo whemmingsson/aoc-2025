@@ -34,6 +34,25 @@ const findRollsToRemove = (m) => {
   return toRemove;
 };
 
+function shuffle(array) {
+  var m = array.length,
+    t,
+    i;
+
+  // While there remain elements to shuffle…
+  while (m) {
+    // Pick a remaining element…
+    i = Math.floor(Math.random() * m--);
+
+    // And swap it with the current element.
+    t = array[m];
+    array[m] = array[i];
+    array[i] = t;
+  }
+
+  return array;
+}
+
 const removeRolls = (m, toRemove) => {
   toRemove.forEach((a) => {
     m.setValue(a.r, a.c, "x");
@@ -44,6 +63,7 @@ const removeRolls = (m, toRemove) => {
 const renderMatrix = () => {
   if (!matrix) return;
 
+  stroke(0);
   let renderFunc = (r, c, v) => {
     if (v === "@") {
       fill(255);
@@ -60,22 +80,21 @@ const renderMatrix = () => {
 
 let isRemoving = false;
 const renderRemovedRolls = async (toRemove) => {
+  const toRemovShuffled = shuffle(toRemove);
   isRemoving = true;
-  let interval = (1 / toRemove.length) * 20;
-  console.log(interval);
-  for (let i = 0; i < toRemove.length; i++) {
-    const a = toRemove[i];
+  for (let i = 0; i < toRemovShuffled.length; i++) {
+    const a = toRemovShuffled[i];
 
     fill(0);
     rect(a.c * CELL_SIZE, a.r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-    if (i % interval === 0) await sleep(1);
+    if (i % 10 === 0) await sleep(2);
   }
   isRemoving = false;
 };
 
 function setup() {
   createCanvas(rows * CELL_SIZE, cols * CELL_SIZE);
-  stroke(50);
+  stroke(25);
 
   parseData();
 }
