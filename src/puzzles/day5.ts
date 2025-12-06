@@ -105,16 +105,15 @@ const reduceRanges = (ranges: Range[]): Range[] => {
 };
 
 const solveFunc = async (d: any) => {
-  const rows = d.data as String[];
-  let ranges = getRanges(rows);
+  let ranges = getRanges(d.data as String[]);
   do {
     ranges = reduceRanges(ranges);
   } while (!allAreDisjoint(ranges));
 
-  let totalCount = ranges
-    .map((r) => getRangeLength(r))
-    .reduce((a, b) => a + b, 0);
-  console.log("Total count", totalCount);
+  console.log(
+    "Total fresh ingredients",
+    ranges.map(getRangeLength).reduce((a, b) => a + b, 0)
+  );
 };
 
 const puzzle = new Puzzle(5, solveFunc, SourceType.STRING_ARRAY, false);
