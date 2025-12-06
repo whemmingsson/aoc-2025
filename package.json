@@ -9,13 +9,19 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "debug": "node --inspect-brk dist/index.js",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+     "build:browser": "esbuild src/browser.ts --bundle --outfile=src/visualisations/shared/bundle.js --format=iife --global-name=AOC"
   },
-  "keywords": ["typescript", "esm", "node"],
+  "keywords": [
+    "typescript",
+    "esm",
+    "node"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "esbuild": "^0.27.1",
     "rimraf": "^5.0.5",
     "tsx": "^4.6.2",
     "typescript": "^5.3.3"

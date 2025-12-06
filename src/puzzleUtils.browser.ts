@@ -1,4 +1,3 @@
-import { getInputAsArrayOfStrings } from "./fileUtils";
 import { Matrix } from "./matrix";
 import { Delimiters } from "./utils";
 
@@ -19,12 +18,11 @@ export const executeOnLine = <T>(
 };
 
 export const buildMatrix = async <T>(
-  fileName: string,
+  rawContent: string,
   columnDelimiter: string = Delimiters.SPACE,
-  lineParser?: (line: string, rowIndex: number, colIndex: number) => T,
-  useExample?: boolean
+  lineParser?: (line: string, rowIndex: number, colIndex: number) => T
 ): Promise<Matrix<T>> => {
-  const content = await getInputAsArrayOfStrings(fileName, useExample);
+  const content = rawContent.split("\n");
   const asTypedContent: T[][] = [];
 
   if (lineParser) {
@@ -41,27 +39,17 @@ export const buildMatrix = async <T>(
 };
 
 export const buildNumberMatrix = async (
-  fileName: string,
-  columnDelimiter: string = Delimiters.SPACE,
-  useExample: boolean = false
+  rawContent: string,
+  columnDelimiter: string = Delimiters.SPACE
 ): Promise<Matrix<number>> => {
-  return buildMatrix<number>(
-    fileName,
-    columnDelimiter,
-    (value) => Number.parseInt(value),
-    useExample
+  return buildMatrix<number>(rawContent, columnDelimiter, (value) =>
+    Number.parseInt(value)
   );
 };
 
 export const buildStringMatrix = async (
-  fileName: string,
-  columnDelimiter: string = Delimiters.SPACE,
-  useExample: boolean = false
+  rawContent: string,
+  columnDelimiter: string = Delimiters.SPACE
 ): Promise<Matrix<string>> => {
-  return buildMatrix<string>(
-    fileName,
-    columnDelimiter,
-    (value) => value,
-    useExample
-  );
+  return buildMatrix<string>(rawContent, columnDelimiter, (value) => value);
 };

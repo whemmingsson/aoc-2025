@@ -56,6 +56,7 @@ type DataForSourceType<T extends SourceType> = T extends SourceType.STRING_ARRAY
 const getData = async <T extends SourceType>(
   sourceType: T,
   fileName: string,
+  columnDelimiter: Delimiters,
   useExample: boolean
 ): Promise<DataForSourceType<T>> => {
   switch (sourceType) {
@@ -77,7 +78,7 @@ const getData = async <T extends SourceType>(
       } as DataForSourceType<T>;
     case SourceType.STRING_MATRIX:
       return {
-        data: await buildStringMatrix(fileName),
+        data: await buildStringMatrix(fileName, columnDelimiter, useExample),
       } as DataForSourceType<T>;
     case SourceType.NUMBER_MATRIX:
       return {
@@ -93,18 +94,21 @@ export class Puzzle<T extends SourceType> {
   fileName: string;
   useExample: boolean;
   sourceType: T;
+  columnDelimiter: Delimiters;
   solver: (data: DataForSourceType<T>) => Promise<void>;
 
   constructor(
     day: number,
     solver: (data: DataForSourceType<T>) => Promise<void>,
     sourceType: T,
-    useExample: boolean = false
+    useExample: boolean = false,
+    columnDelimiter?: Delimiters
   ) {
     this.day = day;
     this.fileName = `day${day}.txt`;
     this.useExample = useExample;
     this.sourceType = sourceType;
+    this.columnDelimiter = columnDelimiter ?? Delimiters.SPACE;
     this.solver = solver;
   }
 
@@ -114,6 +118,7 @@ export class Puzzle<T extends SourceType> {
       const data = await getData(
         this.sourceType,
         this.fileName,
+        this.columnDelimiter,
         this.useExample
       );
       console.log("Starting solver...\n");
