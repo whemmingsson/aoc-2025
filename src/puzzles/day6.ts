@@ -1,10 +1,15 @@
 import { Puzzle, SourceType } from "../Puzzle";
+import { forN } from "../utils";
 
 enum Operator {
   PLUS = "+",
   TIMES = "*",
   UNKNOWN = "U",
 }
+
+const opMap = new Map<string, Operator>();
+opMap.set("*", Operator.TIMES);
+opMap.set("+", Operator.PLUS);
 
 interface Problem {
   operands: number[];
@@ -37,14 +42,7 @@ const solveProblem = (p: Problem) => {
 };
 
 const isOperator = (v: string) => v === "*" || v === "+";
-
-const getOperator = (v: string) => {
-  if (v === "*") return Operator.TIMES;
-  if (v === "+") return Operator.PLUS;
-
-  return Operator.UNKNOWN;
-};
-
+const getOperator = (v: string) => opMap.get(v) ?? Operator.UNKNOWN;
 const getColumnOperator = (column: string[]) =>
   getOperator(column[column.length - 1]!);
 
@@ -65,24 +63,17 @@ const parseRow = (row: string) => {
   }
 };
 
-const getColumn = (rows: String[], position: number) => {
-  let columnValues = [];
-  let row = 0;
-  while (row < rows.length) {
-    columnValues.push(rows[row]![position]!);
-    row++;
-  }
+const getColumn = (rows: String[], pos: number) => {
+  let columnValues: string[] = [];
+  forN(rows.length, (i) => columnValues.push(rows[i]![pos]!));
   return columnValues;
 };
 
-const getColumnOperand = (column: string[]): number => {
-  return Number.parseInt(
-    column
-      .filter((v) => v.trim() !== "")
-      .filter((v) => !isOperator(v))
-      .join("")
-  );
-};
+const getColumnOperand = (column: string[]): number =>
+  column
+    .filter((v) => v.trim() !== "" && !isOperator(v))
+    .join("")
+    .toInt();
 
 const isEmpty = (column: string[]) => column.every((v) => v.trim() === "");
 
@@ -90,22 +81,24 @@ const containsOperator = (column: string[]) =>
   isOperator(column[column.length - 1]!);
 
 const parseByColumns = (rows: string[]) => {
-  let currentProblem: Problem = { operands: [] };
+  let result: Problem[] = [];
+  let problem: Problem = { operands: [] };
 
   for (let i = rows[0]?.length! - 1; i >= 0; i--) {
     const column = getColumn(rows, i);
 
-    if (isEmpty(column)) {
-      currentProblem = { operands: [] };
-      continue;
+    if (!isEmpty(column)) {
+      problem.operands.push(getColumnOperand(column));
     }
-
-    currentProblem.operands.push(getColumnOperand(column));
 
     if (containsOperator(column)) {
-      problems.push({ ...currentProblem, operator: getColumnOperator(column) });
+      problem.operator = getColumnOperator(column);
+      result.push(problem);
+      problem = { operands: [] };
     }
   }
+
+  return result;
 };
 
 const clear = () => {
@@ -116,20 +109,12 @@ const clear = () => {
 const solveFunc = async (d: any) => {
   const rows = d.data as string[];
 
-  for (let i = 0; i < rows.length; i++) {
-    parseRow(rows[i]!);
-  }
-  console.log(
-    "Grant total (pt1)",
-    problems.map(solveProblem).reduce((a, b) => a + b, 0)
-  );
+  forN(rows.length, (i) => parseRow(rows[i]!));
+
+  console.log("(pt1)", problems.map(solveProblem).sum());
 
   clear();
-  parseByColumns(rows);
-  console.log(
-    "Grant total (pt2)",
-    problems.map(solveProblem).reduce((a, b) => a + b, 0)
-  );
+  console.log("(pt2)", parseByColumns(rows).map(solveProblem).sum());
 };
 
 const puzzle = new Puzzle(6, solveFunc, SourceType.STRING_ARRAY, false);
