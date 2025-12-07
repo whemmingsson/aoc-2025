@@ -15,7 +15,7 @@ const solveFunc = async (d: any) => {
   const findRollsToRemove = () => {
     const toRemove: Position[] = [];
     m.foreach((rI, cI) => {
-      if (m.getElement(rI, cI) !== "@") return;
+      if (m.get(rI, cI) !== "@") return;
       const adjacent = m.getAdjacent(rI, cI).filter((m) => m.value === "@");
 
       if (adjacent.length < 4) {
@@ -27,7 +27,7 @@ const solveFunc = async (d: any) => {
 
   const removeRolls = (toRemove: Position[]) => {
     toRemove.forEach((a) => {
-      m.setValue(a.r, a.c, "x");
+      m.set(a.r, a.c, "x");
     });
     return toRemove.length;
   };

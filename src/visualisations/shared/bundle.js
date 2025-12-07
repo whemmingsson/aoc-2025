@@ -26,8 +26,10 @@ var AOC = (() => {
     buildMatrix: () => buildMatrix,
     buildNumberMatrix: () => buildNumberMatrix,
     buildStringMatrix: () => buildStringMatrix,
+    doWhile: () => doWhile,
     executeOnLine: () => executeOnLine,
-    executeOnLineVoid: () => executeOnLineVoid
+    executeOnLineVoid: () => executeOnLineVoid,
+    forN: () => forN
   });
 
   // src/matrix.ts
@@ -40,7 +42,7 @@ var AOC = (() => {
       this.rows = data.length;
       this.cols = data[0]?.length || 0;
     }
-    setValue(row, col, value) {
+    set(row, col, value) {
       this.data[row][col] = value;
     }
     getRow(index) {
@@ -53,14 +55,19 @@ var AOC = (() => {
     getData() {
       return this.data;
     }
+    getLastRow() {
+      return this.getRow(this.rows - 1);
+    }
     getDimensions() {
       return { rows: this.rows, cols: this.cols };
     }
-    getElement(row, col) {
-      if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
-        return void 0;
-      }
+    get(row, col) {
+      if (!this.isInBound(row, col))
+        throw Error(`Out of bounds row=${row}, col=${col}`);
       return this.data[row]?.[col];
+    }
+    isInBound(row, col) {
+      return row < this.rows && col < this.cols && row >= 0 && col >= 0;
     }
     getAdjacent(row, col) {
       let adjacent = [];
@@ -69,7 +76,7 @@ var AOC = (() => {
           let r = row + i;
           let c = col + j;
           if (c === col && r === row) continue;
-          const e = this.getElement(r, c);
+          const e = this.get(r, c);
           adjacent.push({ value: e ?? "", row: r, col: c });
         }
       }
@@ -78,13 +85,20 @@ var AOC = (() => {
     foreach(func) {
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
-          func(r, c, this.getElement(r, c));
+          func(r, c, this.get(r, c));
         }
       }
     }
+    getRows() {
+      return this.rows;
+    }
+    getCols() {
+      return this.cols;
+    }
     print() {
       this.data.forEach((row) => {
-        console.log(row.join(" "));
+        let rowPrint = row.map((v) => "[" + v.toString().padStart(2) + "]").join(" ");
+        console.log(rowPrint.replace("-100", " S").replaceAll("-1", " ^"));
       });
     }
   };
@@ -96,6 +110,31 @@ var AOC = (() => {
     Delimiters2["EMPTY"] = "";
     return Delimiters2;
   })(Delimiters || {});
+  Array.prototype.sum = function() {
+    return this.reduce((acc, val) => acc + val, 0);
+  };
+  Array.prototype.product = function() {
+    return this.reduce((acc, val) => acc * val, 1);
+  };
+  Array.prototype.min = function() {
+    return Math.min(...this);
+  };
+  Array.prototype.max = function() {
+    return Math.max(...this);
+  };
+  String.prototype.toInt = function() {
+    return Number.parseInt(this);
+  };
+  var doWhile = (f, c) => {
+    do {
+      f();
+    } while (c);
+  };
+  var forN = (n, f) => {
+    for (let i = 0; i < n; i++) {
+      f(i);
+    }
+  };
 
   // src/puzzleUtils.browser.ts
   var executeOnLineVoid = (lines, executorFunc) => {

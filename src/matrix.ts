@@ -15,12 +15,12 @@ export class Matrix<T> {
     this.cols = data[0]?.length || 0;
   }
 
-  setValue(row: number, col: number, value: T) {
+  set(row: number, col: number, value: T) {
     this.data[row]![col] = value;
   }
 
-  getRow(index: number): T[] | undefined {
-    return this.data[index];
+  getRow(index: number): T[] {
+    return this.data[index]!;
   }
 
   getColumn(index: number): T[] | undefined {
@@ -32,15 +32,18 @@ export class Matrix<T> {
     return this.data;
   }
 
+  getLastRow() {
+    return this.getRow(this.rows - 1)!;
+  }
+
   getDimensions(): { rows: number; cols: number } {
     return { rows: this.rows, cols: this.cols };
   }
 
-  getElement(row: number, col: number): T | undefined {
-    if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
-      return undefined;
-    }
-    return this.data[row]?.[col];
+  get(row: number, col: number): T {
+    if (!this.isInBound(row, col))
+      throw Error(`Out of bounds row=${row}, col=${col}`);
+    return this.data[row]?.[col]!;
   }
 
   isInBound(row: number, col: number) {
@@ -54,7 +57,7 @@ export class Matrix<T> {
         let r = row + i;
         let c = col + j;
         if (c === col && r === row) continue;
-        const e = this.getElement(r, c);
+        const e = this.get(r, c);
         adjacent.push({ value: e ?? "", row: r, col: c });
       }
     }
@@ -64,9 +67,17 @@ export class Matrix<T> {
   foreach(func: (rI: number, cI: number, v?: T) => void) {
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
-        func(r, c, this.getElement(r, c));
+        func(r, c, this.get(r, c));
       }
     }
+  }
+
+  getRows() {
+    return this.rows;
+  }
+
+  getCols() {
+    return this.cols;
   }
 
   print(): void {

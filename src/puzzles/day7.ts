@@ -17,7 +17,7 @@ let beams: Beam[] = [];
 let splitCounter = 0;
 
 const isSplitterAt = (row: number, col: number) => {
-  return matrix.getElement(row, col) === "^";
+  return matrix.get(row, col) === "^";
 };
 
 const shouldSplitBeam = (b: Beam) => {
@@ -31,7 +31,7 @@ const moveBeams = () => {
 const markBeamsInMatrix = () => {
   beams
     .filter((b) => matrix.isInBound(b.position.row, b.position.col))
-    .forEach((b) => matrix.setValue(b.position.row, b.position.col, "|"));
+    .forEach((b) => matrix.set(b.position.row, b.position.col, "|"));
 };
 
 const getBeamsToSplit = () => {
@@ -142,35 +142,47 @@ const buildNumberMatrix = (oldMatrix: Matrix<string>) => {
   return new Matrix<number>(newData);
 };
 
+enum CellType {
+  Splitter = -1,
+  Empty = 0,
+}
+
 const solvePartTwo = (d: any) => {
   matrix = d.data as Matrix<string>;
   let m = buildNumberMatrix(matrix);
   let starterBeam = getStarterBeam();
-  m.setValue(starterBeam.position.row, starterBeam.position.col, 1);
+  m.set(starterBeam.position.row, starterBeam.position.col, 1);
 
-  for (let r = 2; r < m.getDimensions().rows; r++) {
+  for (let r = 2; r < m.getRows(); r++) {
     let row = m.getRow(r)!;
 
     for (let c = 0; c < row.length; c++) {
-      let above = m.getElement(r - 1, c) ?? 0;
-      if (row[c] === 0 && above !== -1) {
-        m.setValue(r, c, above);
+      let above = m.get(r - 1, c);
+      if (row[c] === CellType.Empty && above !== CellType.Splitter) {
+        m.set(r, c, above);
       }
     }
+
     for (let c = 0; c < row.length; c++) {
-      if (row[c] === -1) {
-        m.setValue(r, c - 1, m.getElement(r, c - 1)! + m.getElement(r - 1, c)!);
-        m.setValue(r, c + 1, m.getElement(r, c + 1)! + m.getElement(r - 1, c)!);
+      if (row[c] === CellType.Splitter) {
+        m.set(r, c - 1, m.get(r, c - 1) + m.get(r - 1, c));
+        m.set(r, c + 1, m.get(r, c + 1) + m.get(r - 1, c));
       }
     }
   }
 
+  const s = m
+    .getLastRow()
+    .filter((v) => v > 0)
+    .sum();
+
   console.log(
     "Part 2:",
+    s,
     m
-      .getRow(m.getDimensions().rows - 1)
-      ?.filter((v) => v > 0)
-      .sum()
+      .getLastRow()
+      .map((v) => (v === 0 ? 0 : Math.log(v)))
+      .map((v) => Math.floor(v * 10))
   );
 };
 
