@@ -43,6 +43,10 @@ export class Matrix<T> {
     return this.data[row]?.[col];
   }
 
+  isInBound(row: number, col: number) {
+    return row < this.rows && col < this.cols && row >= 0 && col >= 0;
+  }
+
   getAdjacent(row: number, col: number): Meta<T>[] {
     let adjacent = [];
     for (let i = -1; i < 2; i++) {
@@ -67,7 +71,10 @@ export class Matrix<T> {
 
   print(): void {
     this.data.forEach((row) => {
-      console.log(row.join(" "));
+      let rowPrint = row
+        .map((v) => "[" + (v as number).toString().padStart(2) + "]")
+        .join(" ");
+      console.log(rowPrint.replace("-100", " S").replaceAll("-1", " ^"));
     });
   }
 }
