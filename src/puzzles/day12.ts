@@ -13,6 +13,26 @@ interface Position {
   y: number;
 }
 
+interface HistoryEntry {
+  matrix: number[][];
+  shape: Shape;
+}
+
+enum Flipp {
+  Y = 0,
+  X = 1,
+}
+
+interface PlacedState {
+  rotation: number | null;
+  flipped: Flipp | null;
+}
+
+interface State {
+  shape: Shape;
+  placedStates: PlacedState[];
+}
+
 enum Degrees {
   D90 = 1,
   D180 = 2,
@@ -40,7 +60,7 @@ class Grid {
   order: number[];
   shapes: Shape[];
   matrix: number[][];
-  history: number[][][];
+  history: HistoryEntry[];
 
   constructor(w: number, h: number, order: number[]) {
     this.width = w;
@@ -67,17 +87,21 @@ class Grid {
     }
   }
 
-  setAt(x: number, y: number) {
-    this.matrix[y]![x] = 1;
+  setAt(x: number, y: number, label?: number) {
+    if (this.matrix[y]) {
+      this.matrix[y][x] = label ?? 1;
+    }
   }
 
   _constructMatrix() {
-    let row = "0"
-      .repeat(this.width)
-      .split("")
-      .map((v) => v.toInt());
+    const buildRow = () => {
+      return "0"
+        .repeat(this.width)
+        .split("")
+        .map((v) => v.toInt());
+    };
     for (let r = 0; r < this.height; r++) {
-      this.matrix.push(row);
+      this.matrix.push(buildRow());
     }
   }
 
@@ -120,21 +144,151 @@ class Grid {
   undo() {
     const prevState = this.history.pop();
     if (prevState) {
-      this.matrix = prevState;
+      this.matrix = prevState.matrix;
+      prevState.shape.remove();
     } else {
       console.log("Unable to undo! [prev state is undefined]");
     }
   }
 
   placeShape(s: Shape, x: number, y: number) {
-    // Place the current "state" on the history stack
-    this.history.push(this.matrix);
-    // Assume s can be placed
-    getRawPositions(s)
-      .map((gp) => {
-        return { x: gp.x + x, y: gp.y + y } as Position;
-      })
-      .forEach((gp) => this.setAt(gp.x, gp.y));
+    this.history.push({ matrix: this.matrix, shape: s });
+    const rawPositions = getRawPositions(s);
+    const positionedPositions = rawPositions.map((gp) => {
+      return { x: gp.x + x, y: gp.y + y } as Position;
+    });
+
+    positionedPositions.forEach((gp) => {
+      this.setAt(gp.x, gp.y, s.id + 1);
+    });
+    s.place();
+  }
+
+  _tryCanPlaceShapeAt(
+    shape: Shape,
+    position: Position,
+    state: PlacedState,
+    prevStates: PlacedState[]
+  ): boolean {
+    const canPlace = () => {
+      return this.canPlaceShapeAt(shape, position.x, position.y);
+    };
+
+    for (let r = 0; r < 4; r++) {
+      state.rotation = r;
+      state.flipped = null;
+
+      // Skip this rotation since it's already tried before
+      if (prevStates.find((ps) => ps.rotation === r)) continue;
+
+      if (canPlace()) return true;
+
+      shape.flipOnX();
+      state.flipped = Flipp.X;
+      if (
+        canPlace() &&
+        !prevStates.find((ps) => ps.rotation === r && ps.flipped === Flipp.X)
+      )
+        return true;
+      shape.flipOnX();
+
+      shape.flipOnY();
+      state.flipped = Flipp.Y;
+      if (
+        canPlace() &&
+        !prevStates.find((ps) => ps.rotation === r && ps.flipped === Flipp.Y)
+      )
+        return true;
+      shape.flipOnY();
+
+      shape.rotate();
+    }
+    //Shape cannot be placed on x,y on any rotation/flipping
+    return false;
+  }
+
+  isAllShapedPlaced() {
+    return this.shapes.every((s) => s.isPlaced);
+  }
+
+  canPlaceShapes() {
+    const revert = () => {
+      // Undoes the state of the grid itself 1 step
+      this.undo();
+    };
+
+    const getNext = () => {
+      return this.shapes.filter((s) => !s.isPlaced).at(0);
+    };
+
+    let triedStates: Map<Shape, PlacedState[]> = new Map();
+    let stateStack: State[] = [];
+    let iter = 0;
+    let shape: Shape | undefined = getNext();
+
+    do {
+      console.log("Considering shape:", shape?.label);
+      if (!shape) {
+        return true; // all placed?
+      }
+      let position = { x: 0, y: 0 };
+      let didPlace = false;
+      let placedState = {} as PlacedState;
+
+      for (let y = 0; y <= this.height - 3; y++) {
+        position.y = y;
+        for (let x = 0; x <= this.width - 3; x++) {
+          position.x = x;
+          if (
+            this._tryCanPlaceShapeAt(
+              shape,
+              position,
+              placedState,
+              triedStates.has(shape) ? triedStates.get(shape)! : []
+            )
+          ) {
+            this.placeShape(shape, position.x, position.y);
+
+            shape.resetRotationAndFlipping();
+
+            const states = triedStates.get(shape) ?? [];
+            states.push(placedState);
+            triedStates.set(shape, states);
+            stateStack.push({ shape: shape, placedStates: states });
+
+            didPlace = true;
+            break;
+          }
+        }
+        if (didPlace) {
+          break;
+        }
+      }
+
+      if (didPlace) {
+        console.log(" Placed shape at", position);
+        let nextShape = getNext();
+        if (!nextShape) {
+          // All placed - return!
+          return true;
+        } else {
+          shape = nextShape;
+        }
+      } else if (!didPlace) {
+        console.log(" Could not place shape, stepping back");
+        let pushedState = stateStack.pop();
+        shape = pushedState?.shape!;
+        triedStates.set(shape, pushedState?.placedStates!);
+        revert();
+      }
+
+      console.log("  Order fulfilled:", this.isAllShapedPlaced());
+      if (this.isAllShapedPlaced()) {
+        return true;
+      }
+
+      iter++;
+    } while (true);
   }
 }
 
@@ -144,12 +298,14 @@ class Shape {
   label: string;
   rows: string[];
   rowsOriginal: string[];
+  isPlaced: boolean;
   constructor(id: number, label: string, rows: string[]) {
     this.id = id;
     this.label = label;
     this.matrix = [];
     this.rows = rows;
     this.rowsOriginal = [...rows];
+    this.isPlaced = false;
     this._constructMatrix(this.rows);
   }
 
@@ -179,6 +335,14 @@ class Shape {
 
   clone(): Shape {
     return new Shape(this.id, this.label, this.rows);
+  }
+
+  place() {
+    this.isPlaced = true;
+  }
+
+  remove() {
+    this.isPlaced = false;
   }
 
   _getRotatedRows(rows: string[]) {
@@ -225,7 +389,7 @@ class Shape {
     this._constructMatrix(newRows);
   }
 
-  reset() {
+  resetRotationAndFlipping() {
     this._constructMatrix(this.rowsOriginal);
   }
 }
@@ -283,9 +447,27 @@ const solveFunc = async (d: any) => {
   loadShapes();
 
   // Debug logging
-  printShapes();
-  printGrids();
+  //printShapes();
+  //printGrids();
+
+  // Test for 1
+  const canPlaceAll = grids[1]?.canPlaceShapes();
+  console.log(grids[1]!.order, canPlaceAll);
+  grids[1]?.printMatrix();
 };
 
 const puzzle = new Puzzle(12, solveFunc, SourceType.STRING_ARRAY, true);
 export default puzzle;
+
+// Algo
+/*
+
+Pick shape
+Try shape all possible orientations
+if can place -> Place and push state
+If can not place:
+    if prev shape has unused state:
+        go back and try another config 
+    if no prev state available: is it over?
+
+    */
